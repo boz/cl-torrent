@@ -34,12 +34,11 @@
   (fassert-equal 10 "integer-1.torrent"))
 
 (define-test decode-list
-  (fassert-equal (list 10 20)
-                 "list-1.torrent"))
+  (fassert-equal (list 10 20) "list-1.torrent"))
 
 (define-test decode-dict
   (let ((dict (decode-test-file "dict-1.torrent")))
    (multiple-value-bind (val exists)
-       (gethash 10 dict)
+       (gethash "foo" dict)
      (assert-equal t exists)
      (assert-equal 20 val))))
