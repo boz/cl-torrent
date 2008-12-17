@@ -26,8 +26,7 @@
   (assert (char= c #\i))
   (multiple-value-bind (x c)
       (slurp-decimal sin)
-    (unless (char= #\e c)
-      (error "Invalid integer encoding: ended with ~c" c))
+    (assert (char= #\e c))
     x))
 
 (defun decode-dict (c sin)
@@ -38,14 +37,13 @@
       ((char= c #\e) dict)
       (let ((key (decode-dispatch c sin))
             (val (decode-dispatch (read-next-char sin nil) sin)))
-        (setf (gethash key dict)
-              val))))
+        (setf (gethash key dict) val))))
 
 (defun decode-list (c sin)
   (assert (char= c #\l))
-  (let ((c (read-next-char sin nil)))
-    (do ((c c (read-next-char sin nil))
-         (lst nil))
-        ((char= c #\e) (nreverse lst))
-      (setf lst
-            (cons (decode-dispatch c sin) lst)))))
+  (do ((c (read-next-char sin nil)
+          (read-next-char sin nil))
+       (lst nil))
+      ((char= c #\e) (nreverse lst))
+    (setf lst
+          (cons (decode-dispatch c sin) lst))))

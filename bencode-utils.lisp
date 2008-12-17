@@ -5,14 +5,7 @@
      (char-code #\0)))
 
 (defun buf->string (buf)
-  (let* ((len (length buf))
-         (str (make-string len)))
-    (loop
-         for i from 0 to (- len 1)
-         do
-         (setf (aref str i)
-               (code-char (aref buf i))))
-    str))
+  (map 'string #'code-char buf))
 
 (defun read-next-char (sin return-eof)
   (if return-eof
