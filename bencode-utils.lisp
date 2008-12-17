@@ -29,4 +29,3 @@
        (values x c))
     (setf x (+ (char->number c)
                (* 10 x)))))
-

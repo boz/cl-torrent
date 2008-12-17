@@ -32,3 +32,7 @@
 
 (define-test decode-integer
   (fassert-equal 10 "integer-1.torrent"))
+
+(define-test decode-list
+  (fassert-equal (list 10 20)
+                 "list-1.torrent"))
