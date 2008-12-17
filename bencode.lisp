@@ -1,15 +1,8 @@
-(in-package :cl-torrent.bencode)
+(in-package :cl-torrent)
 
-(defun read-next-char (sin)
-  (let (c (read-byte sin nil :eof)
-          (if (= :eof c)
-              :eof
-              (code-char c)))))
-
-(defun skip-space (sin)
-  (do ((c (read-next-char sin)
-          (read-next-char sin)))
-      ((not (= #\space c)) c)))
+(defun decode (sin)
+  (let ((c (read-next-char sin t)))
+    (decode-dispatch c sin)))
 
 (defun decode-dispatch (c sin)
   (cond
@@ -19,24 +12,30 @@
     ((char= c #\i)    (decode-integer c sin))
     ((digit-char-p c) (decode-string  c sin))))
 
-(defun decode ()
-  (let ((c (skip-space sin)))
-    (decode-dispatch c sin)))
+(defun decode-string (c sin)
+  (multiple-value-bind (len c)
+      (slurp-decimal sin c)
+    (unless (char= #\: c)
+      (error "Invalid string: expected ~c got ~c" #\: c))
+    (let* ((buf (make-array len))
+           (rlen (read-sequence buf sin)))
+      (unless (= rlen len)
+        (error "Tried to read ~d byte, read ~d" len rlen))
+      buf)))
 
-(defun decode-string  (c stream)
-  )
+(defun decode-integer (c sin)
+  (declare (ignore c))
+  (multiple-value-bind (x c)
+      (slurp-decimal sin)
+    (unless (char= #\e c)
+      (error "Invalid integer encoding: ended with ~c" c))
+    x))
 
-(defun decode-integer (c stream))
-
-(defun decode-dict    (c stream)
-  (let (h (make-hash-table))
+(defun decode-dict (c stream)
+  (declare (ignore c))
+  (let ((h (make-hash-table)))
     h))
 
-(defun decode-list (c stream)
-  (let (lst)
-    (do ((c (skip-space sin) (skip-space sin)))
-        ((or (= c :eof) (char= c #\e))
-         lst)
-      (let ((x (decode-dispatch c sin)))
-        (when x 
-          (setf lst (append lst x)))))))
+(defun decode-list (c sin)
+  (declare (ignore sin))
+  (list))

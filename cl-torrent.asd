@@ -5,10 +5,14 @@
 
 (in-package :cl-torrent.asd)
 
-(defsystem cl-torrent.bencode
-    :name "cl-torrent.bencode"
+(defsystem cl-torrent
+    :name "cl-torrent"
     :components ((:file "packages")
-                 (:file "bencode"      :depends-on ("packages"))
-                 (:file "bencode-test" :depends-on ("bencode")))
+                 (:file "bencode-utils"
+                        :depends-on ("packages"))
+                 (:file "bencode"
+                        :depends-on ("bencode-utils" "packages"))
+                 (:file "bencode-test"
+                        :depends-on ("bencode-utils" "bencode" "packages")))
     :depends-on (:lisp-unit))
 
