@@ -18,12 +18,17 @@
   (with-test-file stream name
     (decode stream)))
 
-(defmacro assert-string (expect val)
-  `(assert-equal ,expect (buf->string ,val)))
+(defmacro fassert-equal (expect file &optional (xform 'identity))
+  `(assert-equal ,expect (,xform (decode-test-file ,file))))
 
-(defmacro fassert-string (expect fname)
-  `(assert-string ,expect (decode-test-file ,fname)))
+(defmacro fassert-equal-string (expect file)
+  `(fassert-equal ,expect ,file buf->string))
 
-(define-test test-decode-string
-  (fassert-string "foo" "string-1.torrent"))
+(define-test buf->string
+  (assert-equal "foo" (buf->string #(102 111 111))))
 
+(define-test decode-string
+  (fassert-equal-string "foo" "string-1.torrent"))
+
+(define-test decode-integer
+  (fassert-equal 10 "integer-1.torrent"))
