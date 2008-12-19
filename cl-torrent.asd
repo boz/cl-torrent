@@ -14,5 +14,5 @@
                         :depends-on ("bencode-utils" "packages"))
                  (:file "bencode-test"
                         :depends-on ("bencode-utils" "bencode" "packages")))
-    :depends-on (:lisp-unit))
+    :depends-on (:lisp-unit :flexi-streams))
 
