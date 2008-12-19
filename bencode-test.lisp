@@ -6,23 +6,22 @@
                    :name "tests")))
 
 (defun make-testfile-name (file-name)
-  (concatenate 'string
-               (namestring *test-directory*) "/" file-name))
+  (concatenate 'string (namestring *test-directory*) "/" file-name))
 
-(defmacro with-test-file ((stream-name file-name) &body body)
-  `(with-open-file (,stream-name (make-testfile-name ,file-name)
-                                 :element-type '(unsigned-byte 8))
-     (progn ,@body)))
+(defmacro decode-equal (expect input
+                        &optional (decode-func 'decode)
+                                  (oxform      'identity)
+                                  (ixform      'identity))
+  `(assert-equal ,expect (,oxform (,decode-func (,ixform ,input)))))
 
-(defun decode-test-file (name)
-  (with-test-file (stream name)
-    (decode stream)))
+(defmacro fdecode-equal (expect file &optional (oxform 'identity))
+  `(decode-equal ,expect ,file decode-file ,oxform make-testfile-name))
 
-(defmacro fassert-equal (expect file &optional (xform 'identity))
-   `(assert-equal ,expect (,xform (decode-test-file ,file))))
+(defmacro fsdecode-equal (expect file)
+  `(fdecode-equal ,expect ,file octets->string))
 
-(defmacro fassert-equal-string (expect file)
-  `(fassert-equal ,expect ,file octets->string))
+(defmacro sdecode-equal (expect input)
+  `(decode-equal ,expect ,input decode octets->string))
 
 (define-test octets->string
   (assert-equal "foo" (octets->string #(102 111 111))))
@@ -31,13 +30,17 @@
   (assert-equalp #(102 111 111) (string->octets "foo")))
 
 (define-test decode-string
-  (assert-equal "foo" (octets->string (decode "3:foo"))))
+  (sdecode-equal "foo" "3:foo")
+  (sdecode-equal "" "0:")
+  (fsdecode-equal "foo" "string-1.torrent"))
 
 (define-test decode-integer
-  (assert-equal 20 (decode "i20e")))
+  (decode-equal 20 "i20e")
+  (fdecode-equal 10 "integer-1.torrent"))
 
 (define-test decode-list
-  (assert-equal '(30 40) (decode "li30ei40ee")))
+  (decode-equal  '(30 40) "li30ei40ee")
+  (fdecode-equal '(10 20) "list-1.torrent"))
 
 (define-test decode-dict
   (let ((dict (decode "d3:fooi20ee")))

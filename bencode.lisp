@@ -8,19 +8,16 @@
 (defgeneric decode-from-stream (decoder stream))
 (defgeneric decode-object (decoder type stream))
 
-(defmethod make-decoding-stream ((decoder bencode-decoder)
-                                 (stream stream))
+(defmethod make-decoding-stream ((decoder bencode-decoder) (stream stream))
   (make-instance 'bencode-input-stream
                  :stream stream
                  :element-type '(unsigned-byte 8)
                  :flexi-stream-external-format *bencode-external-format*))
 
-(defmethod make-decoding-stream  ((decoder bencode-decoder)
-                                  (string string))
+(defmethod make-decoding-stream  ((decoder bencode-decoder) (string string))
   (make-decoding-stream decoder (string->octets string)))
 
-(defmethod make-decoding-stream ((decoder bencode-decoder)
-                                 (seq vector list))
+(defmethod make-decoding-stream ((decoder bencode-decoder) (seq vector list))
   (make-decoding-stream decoder (make-in-memory-input-stream seq)))
 
 (defmethod next-object-type ((decoder bencode-decoder) stream)
@@ -39,9 +36,7 @@
 (defmacro assert-next-char (char stream)
   `(assert (char= ,char (code-char (read-byte ,stream)))))
 
-(defmethod decode-object ((decoder bencode-decoder)
-                          (type (eql 'string))
-                          stream)
+(defmethod decode-object ((decoder bencode-decoder) (type (eql 'string)) stream)
   (let ((len (read-decimal stream)))
     (assert-next-char #\: stream)
     (let* ((buf  (make-array len))
@@ -49,9 +44,7 @@
       (assert (= rlen len))
       buf)))
 
-(defmethod decode-object ((decoder bencode-decoder)
-                          (type (eql 'integer))
-                          stream)
+(defmethod decode-object ((decoder bencode-decoder) (type (eql 'integer)) stream)
   (assert-next-char #\i stream)
   (let ((val (read-decimal stream)))
     (assert-next-char #\e stream)
@@ -74,9 +67,7 @@
       (setf (gethash key dict)
             (decode-object decoder type stream)))))
 
-(defmethod decode-object ((decoder bencode-decoder)
-                          (type (eql 'list))
-                          stream)
+(defmethod decode-object ((decoder bencode-decoder) (type (eql 'list)) stream)
   (assert-next-char #\l stream)
   (do ((type (next-object-type decoder stream)
              (next-object-type decoder stream))
@@ -91,3 +82,7 @@
   (let* ((decoder (make-instance type))
          (stream  (make-decoding-stream decoder input-object)))
     (decode-from-stream decoder stream)))
+
+(defun decode-file (pathname &optional (type 'bencode-decoder))
+  (with-open-file (stream pathname :element-type '(unsigned-byte 8))
+    (decode stream type)))
