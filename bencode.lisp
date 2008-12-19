@@ -13,7 +13,7 @@
   (make-instance 'bencode-input-stream
                  :stream stream
                  :element-type '(unsigned-byte 8)
-                 :flexi-stream-external-format +bencode-external-format+))
+                 :flexi-stream-external-format *bencode-external-format*))
 
 (defmethod make-decoding-stream  ((decoder bencode-decoder)
                                   (string string))

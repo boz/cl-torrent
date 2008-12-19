@@ -1,9 +1,9 @@
 (in-package :cl-torrent)
 
-(defconstant +bencode-external-format+
+(defparameter *bencode-external-format*
   (make-external-format :ASCII))
 
-(defconstant +bencode-external-string-format+
+(defparameter *bencode-external-string-format*
   (make-external-format :UTF-8))
 
 (defun char->number (c)
@@ -18,7 +18,7 @@
                (* 10 x)))))
 
 (defun octets->string (buf)
-  (octets-to-string buf :external-format +bencode-external-string-format+))
+  (octets-to-string buf :external-format *bencode-external-string-format*))
 
 (defun string->octets (buf)
-  (string-to-octets buf :external-format +bencode-external-string-format+))
+  (string-to-octets buf :external-format *bencode-external-string-format*))
