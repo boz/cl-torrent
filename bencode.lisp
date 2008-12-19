@@ -1,26 +1,42 @@
 (in-package :cl-torrent)
 
-(defclass bencode-input-stream (flexi-input-stream) ())
+(defclass bencode-input-stream (flexi-input-stream) ()
+  (:documentation
+   "An INPUT-STREAM with an :ELEMENT-TYPE of '(UNSIGNED-BYTE 8) that
+supports PEEK-CHAR and READ-CHAR."))
+
 (defclass bencode-decoder () ())
 
-(defgeneric make-decoding-stream (decoder input-object))
-(defgeneric next-object-type (decoder stream))
-(defgeneric decode-from-stream (decoder stream))
-(defgeneric decode-object (decoder type stream))
+(defgeneric make-decoding-stream (decoder input-object)
+  (:documentation "Create an input stream necessary for decoding."))
+
+(defgeneric next-object-type (decoder stream)
+  (:documentation "Determine the next object type in the given stream."))
+
+(defgeneric decode-from-stream (decoder stream)
+  (:documentation "Decode an object from the given stream."))
+
+(defgeneric decode-object (decoder type stream)
+  (:documentation "Decode the object of type TYPE from the given stream"))
 
 (defmethod make-decoding-stream ((decoder bencode-decoder) (stream stream))
+  "Wrap the given STREAM with a BENCODE-INPUT-STREAM."
   (make-instance 'bencode-input-stream
                  :stream stream
                  :element-type '(unsigned-byte 8)
                  :flexi-stream-external-format *bencode-external-format*))
 
-(defmethod make-decoding-stream  ((decoder bencode-decoder) (string string))
-  (make-decoding-stream decoder (string->octets string)))
-
 (defmethod make-decoding-stream ((decoder bencode-decoder) (seq vector list))
+  "Transform the SEQUENCE into an in-memory before continuing."
   (make-decoding-stream decoder (make-in-memory-input-stream seq)))
 
+(defmethod make-decoding-stream  ((decoder bencode-decoder) (string string))
+  "Transform the STRING into an OCTET VECTOR before continuing."
+  (make-decoding-stream decoder (string->octets string)))
+
 (defmethod next-object-type ((decoder bencode-decoder) stream)
+  "Use PEEK-CHAR to determine the next object type.  If EOF is reached or the
+next character does not signal an object type, return NIL."
   (let ((c (peek-char nil stream t)))
     (cond
       ((char= c #\d)    'dictionary)
@@ -34,9 +50,11 @@
       (decode-object decoder type stream))))
 
 (defmacro assert-next-char (char stream)
+  "Read the next character from the stream, and assert it's value."
   `(assert (char= ,char (code-char (read-byte ,stream)))))
 
 (defmethod decode-object ((decoder bencode-decoder) (type (eql 'string)) stream)
+  "Decode a bencoded string."
   (let ((len (read-decimal stream)))
     (assert-next-char #\: stream)
     (let* ((buf  (make-array len))
@@ -44,7 +62,10 @@
       (assert (= rlen len))
       buf)))
 
-(defmethod decode-object ((decoder bencode-decoder) (type (eql 'integer)) stream)
+(defmethod decode-object ((decoder bencode-decoder)
+                          (type (eql 'integer))
+                          stream)
+  "Decode a bencoded integer."
   (assert-next-char #\i stream)
   (let ((val (read-decimal stream)))
     (assert-next-char #\e stream)
@@ -53,21 +74,23 @@
 (defmethod decode-object ((decoder bencode-decoder)
                           (type (eql 'dictionary))
                           stream)
-  (assert-next-char #\d stream)
+  "Decode a bencoded dictionary."
+  (assert-next-char #\d stream) 
   (do ((type (next-object-type decoder stream)
              (next-object-type decoder stream))
        (dict (make-hash-table :test #'equal)))
       ((and (not type) (char= #\e (read-char stream)))
        dict)
-    (assert (eq type 'string)) 
+    (assert (eq type 'string)) ;; keys must be a string
     (let* ((key  (decode-object decoder type stream))
            (key  (octets->string key))
            (type (next-object-type decoder stream)))
-      (assert type)
+      (assert type) ;; a value is required
       (setf (gethash key dict)
             (decode-object decoder type stream)))))
 
 (defmethod decode-object ((decoder bencode-decoder) (type (eql 'list)) stream)
+  "Decode a bencoded list."
   (assert-next-char #\l stream)
   (do ((type (next-object-type decoder stream)
              (next-object-type decoder stream))
@@ -75,14 +98,16 @@
       ((and (not type) (char= #\e (read-char stream)))
        (nreverse lst))
     (assert type)
-    (setf lst
-          (cons (decode-object decoder type stream) lst))))
+    (push (decode-object decoder type stream) lst)))
 
 (defun decode (input-object &optional (type 'bencode-decoder))
+  "Decode the input-object which should be a SEQUENCE of bytes, a STRING,
+or an INPUT-STREAM with an :ELEMENT-TYPE of '(UNSIGNED-BYTE 8)."
   (let* ((decoder (make-instance type))
          (stream  (make-decoding-stream decoder input-object)))
     (decode-from-stream decoder stream)))
 
 (defun decode-file (pathname &optional (type 'bencode-decoder))
+  "Decode the file named ``pathname''."
   (with-open-file (stream pathname :element-type '(unsigned-byte 8))
     (decode stream type)))
