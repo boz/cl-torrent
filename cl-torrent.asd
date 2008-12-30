@@ -6,15 +6,18 @@
 (in-package :cl-torrent.asd)
 
 (defsystem cl-torrent
-  :name "cl-torrent"
-  :components ((:file "packages")
-               (:file "bencode-utils"
-                      :depends-on ("packages"))
-               (:file "bencode"
-                      :depends-on ("packages" "bencode-utils"))
-               (:file "metainfo"
-                      :depends-on ("packages" "bencode-utils" "bencode")))
-  :depends-on (:flexi-streams :ironclad))
+    :name "cl-torrent"
+    :components
+    ((:file "packages")
+     (:file "bencode-utils"
+            :depends-on ("packages"))
+     (:file "bencode"
+            :depends-on ("packages" "bencode-utils"))
+     (:file "metainfo-lib"
+            :depends-on ("packages" "bencode-utils" "bencode"))
+     (:file "metainfo"
+            :depends-on ("packages" "bencode-utils" "bencode" "metainfo-lib")))
+    :depends-on (:flexi-streams :ironclad))
 
 (defsystem cl-torrent.test
   :name "cl-torrent.test"
