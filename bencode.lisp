@@ -88,14 +88,59 @@ next character does not signal an object type, return NIL."
     (assert type)
     (push (decode-object decoder type stream) lst)))
 
-(defun bencode-decode (input-object &optional (type 'bencode-decoder))
+(defclass cached-bencode-input-stream (flexi-input-stream)
+  ((object-map
+    :initarg :object-map :accessor object-map-of)
+   (output-stream
+    :initarg :output-stream :accessor output-stream-of))
+  (:documentation ""))
+
+(defun make-cached-bencode-input-stream (stream)
+  (let* ((out
+          (make-flexi-stream (make-in-memory-output-stream)
+                             :external-format *bencode-external-format*))
+         (stream (make-echo-stream stream out)))
+    (make-instance 'cached-bencode-input-stream
+                   :stream stream
+                   :element-type 'octet
+                   :flexi-stream-external-format *bencode-external-format*
+                   :object-map (make-hash-table :test 'eq)
+                   :output-stream (flexi-stream-stream out))))
+
+(defclass cached-bencode-decoder (bencode-decoder) ()
+  (:documentation
+   "Decode cached-bencode files."))
+
+(defmethod decode-from-stream :around ((decoder cached-bencode-decoder) stream)
+  (let* ((stream (make-cached-bencode-input-stream stream))
+         (val    (call-next-method decoder stream))
+         (map    (object-map-of stream))
+         (buf    (get-output-stream-sequence (output-stream-of stream))))
+    (values val map buf)))
+
+(defmethod decode-object :around ((decoder cached-bencode-decoder) type stream)
+  (with-accessors ((map object-map-of)) stream
+    (let ((start  (flexi-stream-position stream))
+          (value  (call-next-method))
+          (finish (flexi-stream-position stream)))
+      (setf (gethash value map) (cons start finish))
+      value)))
+
+(defun cached-bencode-decode (input-object)
+  (bencode-decode input-object 'cached-bencode-decoder))
+
+(defun cached-bencode-decode-file (filename)
+  (bencode-decode-file filename 'cached-bencode-decoder))
+
+(defun bencode-decode (input-object &optional (use-cache nil))
   "Decode the input-object which should be a SEQUENCE of bytes, a STRING,
 or an INPUT-STREAM with an :ELEMENT-TYPE of '(UNSIGNED-BYTE 8)."
-  (let* ((decoder (make-instance type))
+  (let* ((decoder (make-instance
+                   (if use-cache 'cached-bencode-decoder 'bencode-decoder)))
          (stream  (make-decoding-stream decoder input-object)))
     (decode-from-stream decoder stream)))
 
-(defun bencode-decode-file (pathname &optional (type 'bencode-decoder))
+(defun bencode-decode-file (pathname &optional (use-cache nil))
   "Decode the file named ``pathname''."
   (with-open-file (stream pathname :element-type '(unsigned-byte 8))
-    (bencode-decode stream type)))
+    (bencode-decode stream use-cache)))
