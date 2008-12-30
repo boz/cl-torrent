@@ -17,7 +17,7 @@
             :depends-on ("packages" "bencode-utils" "bencode"))
      (:file "metainfo"
             :depends-on ("packages" "bencode-utils" "bencode" "metainfo-lib")))
-    :depends-on (:flexi-streams :ironclad))
+    :depends-on (:flexi-streams :ironclad :fiveam))
 
 (defsystem cl-torrent.test
   :name "cl-torrent.test"

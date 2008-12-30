@@ -15,8 +15,7 @@
   (declare (ignore type ctx))
   (when value
     (assert (listp value))
-    (flet ((f (l) (mapcar #'octets->string l)))
-      (mapcar #'f value))))
+    (loop for x in value collect (mapcar #'octets->string x))))
 
 (defmethod decode-bencmap-value ((type (eql 'piece-list)) value ctx)
   (declare (ignore type ctx))

@@ -60,18 +60,6 @@
     (assert (listp value))
     (mapcar #'octets->string value)))
 
-(defun direct-slots (name)
-  (copy-list (get name 'slots)))
-
-(defun inherited-slots (name)
-  (loop
-     for super in (get name 'superclasses)
-     nconc (direct-slots super)
-     nconc (inherited-slots super)))
-
-(defun all-slots (name)
-  (nconc (direct-slots name) (inherited-slots name)))
-
 (defgeneric bencmap->list (obj))
 (defmethod bencmap->list ((obj t)) obj)
 (defmethod bencmap->list ((obj list))
@@ -104,9 +92,9 @@
            ,@(mapcar #'(lambda (x) (slot-decoder ctx x)) slots))
          ,obj))))
 
-(defmacro define-class-bencmap->list (name)
+(defmacro define-class-bencmap->list (name slots)
   (with-gensyms (obj)
-    (let ((slots (mapcar #'first (all-slots name))))
+    (let ((slots (mapcar #'first slots)))
       `(defmethod bencmap->list ((,obj ,name))
          (list ,(symbol->keyword name)
                ,@(loop
@@ -120,9 +108,6 @@
 
 (defmacro defbencmap (name superclasses slots)
   `(progn
-     (eval-when (:compile-toplevel :load-toplevel :execute)
-       (setf (get ',name 'slots) ',slots)
-       (setf (get ',name 'superclasses) ',superclasses))
-     (define-bencmap-class ,name ,superclasses ,(all-slots name))
-     (define-class-bencmap->list ,name)
-     (define-class-bencmap-decoder ,name ,(all-slots name))))
+     (define-bencmap-class ,name   ,superclasses ,slots)
+     (define-class-bencmap->list   ,name ,slots)
+     (define-class-bencmap-decoder ,name ,slots)))
