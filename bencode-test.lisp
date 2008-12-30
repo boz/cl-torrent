@@ -2,11 +2,6 @@
 
 (defparameter *test-directory* nil)
 
-;; (eval-when (:compile-toplevel)
-;;   (defparameter *test-directory* 
-;;     (make-pathname :directory (pathname-directory *compile-file-pathname*)
-;;                    :name "tests")))
-
 (defun make-testfile-name (file-name)
   (concatenate 'string (namestring *test-directory*) "/" file-name))
 
@@ -48,6 +43,7 @@
 
 (5am:test decode-list
   (decode-equal  '(30 40) "li30ei40ee")
+  (5am:is (equalp '(#(65) #(65)) (bencode-decode "l1:A1:Ae")))
   (fdecode-equal '(10 20) "list-1.torrent"))
 
 (5am:test decode-dict
@@ -68,6 +64,10 @@
   (dolist (i (get-test-torrents))
     (5am:is-true  (bencode-decode-file i))
     (5am:is-true  (bencode-decode-file i t))))
+
+(5am:test metainfo-test-torrents
+  (dolist (i (get-test-torrents))
+    (5am:is-true (metainfo-decode-file i))))
 
 (defun run-cl-torrent-tests ()
   (5am:run!))
