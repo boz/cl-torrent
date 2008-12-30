@@ -2,159 +2,199 @@
 
 (declaim (optimize (speed 0) (safety 3) (debug 3)))
 
-;; (defgeneric bencmap-read-object (type ))
-;; (defclass bencmap-base () ())
-;; (defun slot->defclass-slot (spec))
+(defclass bencmap-decode-ctx ()
+  ((benc-hash   :reader benc-hash   :initarg :benc-hash)
+   (range-map   :reader range-map   :initarg :range-map)
+   (byte-buffer :reader byte-buffer :initarg :byte-buffer)))
 
-;; (defmacro defbencmap (name slots)
-;;   `(defclass ,name (bencmap-base)
-;;      (,(mapcar #'slot->defclass-slot slots))))
+(defun new-decode-ctx (old-ctx new-hash)
+  (make-instance 'bencmap-decode-ctx
+                 :benc-hash   new-hash
+                 :range-map   (range-map old-ctx)
+                 :byte-buffer (byte-buffer old-ctx)))
 
-;; (defbencmap metainfo
-;;     ((info          info-dict   :required t)
-;;      (announce      string      :required t)
-;;      (announce-list string-list :required t)
-;;      (creation-date epoch-date  :key "creation date")
-;;      (created-by    string      :key "created by")
-;;      (info-hash     info-hash)
-;;      (comment       string)))
+(defun decode-ctx-get (ctx key)
+  (gethash key (benc-hash ctx)))
 
-(defclass metainfo ()
-  ((info
-    :accessor info :initarg :info)
-   (info-hash
-    :accessor info-hash :initarg :info-hash)
-   (announce
-    :accessor announce :initarg :announce)
-   (announce-list
-    :accessor announce-list :initarg :announce-list :initform nil)
-   (creation-date
-    :accessor creation-date :initarg :creation-date :initform nil)
-   (comment
-    :accessor comment :initarg :comment :initform nil)
-   (created-by
-    :accessor created-by :initarg :created-by :initform nil)))
+(defun decode-ctx-contains (ctx key)
+  (multiple-value-bind (val exists) (decode-ctx-get ctx key)
+    (declare (ignore val))
+    exists))
 
-(defclass info-dict ()
-  ((piece-length
-    :accessor piece-length-of :initarg :piece-length)
-   (pieces
-    :accessor pieces :initarg :pieces)
-   (private
-    :accessor private :initarg :private :initform 1)))
+(defun decode-ctx-get-range (ctx key)
+  (multiple-value-bind (obj exists) (decode-ctx-get ctx key)
+    (if (not exists)
+        (values nil nil)
+        (gethash obj (range-map ctx)))))
 
-(defclass info-dict-single (info-dict)
-  ((name
-    :accessor name :initarg :name :initform nil)
-   (length
-    :accessor length-of :initarg length)
-   (md5sum
-    :accessor md5sum :initarg :md5sum :initform nil)))
+(defun decode-ctx-get-bytes (ctx key)
+  (multiple-value-bind (range exists) (decode-ctx-get-range ctx key)
+    (if (not exists)
+        (values nil nil)
+        (values
+         (subseq (byte-buffer ctx) (first range) (second range)) t))))
 
-(defclass info-dict-multi (info-dict)
-  ((name
-    :accessor name :initarg :name :initform nil)
-   (files
-    :accessor files :initarg :files)))
+(defgeneric decode-bencmap (type ctx))
 
-(defclass info-dict-multi-file ()
-  ((length
-    :accessor length-of :initarg :length)
-   (md5sum
-    :accessor md5sum :initarg :md5sum :initform nil)
-   (path
-    :accessor path :initarg :path)))
+(defgeneric decode-bencmap-value (type value ctx))
 
-(defun getstring (key hash)
-  (let ((val (gethash key hash)))
-    (if (and val (length val))
-        (octets->string val)
-        nil)))
+(defmethod decode-bencmap-value ((type (eql 'string)) value ctx)
+  (declare (ignore type ctx))
+  (when value
+    (octets->string value)))
 
-(defun parse-announce-list (lst)
+(defmethod decode-bencmap-value ((type (eql 'integer)) value ctx)
+  (declare (ignore ctx))
+  (when value
+    (assert (integerp type))
+    value))
+
+(defmethod decode-bencmap-value ((type (eql 'info-hash)) value ctx)
+  (declare (ignore type))
+  (assert (not value))
+  (multiple-value-bind (bytes exists)
+      (decode-ctx-get-bytes ctx "info")
+    (assert exists)
+    (ironclad:byte-array-to-hex-string
+     (ironclad:digest-sequence :sha1 bytes))))
+
+(defmethod decode-bencmap-value ((type (eql 'announce-list)) value ctx)
   "http://www.bittornado.com/docs/multitracker-spec.txt"
-  (flet ((f (l)
-           (mapcar #'octets->string l)))
-    (mapcar #'f lst)))
+  (declare (ignore type ctx))
+  (when value
+    (assert (listp value))
+    (flet ((f (l) (mapcar #'octets->string l)))
+      (mapcar #'f value))))
 
-(defun make-info-hash (info-hash offset-map buffer)
-  (let ((range (gethash info-hash offset-map)))
-    (assert range)
-    (let ((buffer (subseq buffer (car range) (cdr range))))
-      (ironclad:byte-array-to-hex-string
-       (ironclad:digest-sequence :sha1 buffer)))))
+(defmethod decode-bencmap-value ((type (eql 'epoch-date)) value ctx)
+  (declare (ignore type ctx))
+  (when value
+    (assert (integerp value))
+    value))
 
-(defun make-pieces (seq)
+(defmethod decode-bencmap-value ((type (eql 'info-dict)) value ctx)
+  (declare (ignore type))
+  (when value
+    (assert (hash-table-p value))
+    (let ((ctx (new-decode-ctx ctx value)))
+      (if (decode-ctx-contains ctx "files")
+          (decode-bencmap 'info-dict-multi ctx)
+          (decode-bencmap 'info-dict-single ctx)))))
+
+(defmethod decode-bencmap-value ((type (eql 'piece-list)) value ctx)
+  (declare (ignore type ctx))
+  (when value
+    (loop
+       repeat (/ (length value) 20)
+       for x = 0 then (+ x 20)
+       collecting (subseq value x (+ x 20)))))
+
+(defmethod decode-bencmap-value ((type (eql 'info-file-list)) value ctx)
+  (declare (ignore type))
+  (when value
+    (assert (listp value))
+    (flet ((do-decode (x)
+             (decode-bencmap 'info-dict-multi-file
+                             (new-decode-ctx ctx x))))
+      (mapcar #'do-decode value))))
+
+(defun direct-slots (name)
+  (copy-list (get name 'slots)))
+
+(defun inherited-slots (name)
   (loop
-     repeat (/ (length seq) 20)
-     for x = 0 then (+ x 20)
-     collecting (subseq seq x (+ x 20))))
+     for super in (get name 'superclasses)
+     nconc (direct-slots super)
+     nconc (inherited-slots super)))
 
-(defun info-dict-single-decode (dict &rest rest)
-  (let ((md5sum (getstring "md5sum" dict)))
-    (apply 'make-instance
-           'info-dict-single
-           :md5sum md5sum
-           rest)))
+(defun all-slots (name)
+  (nconc (direct-slots name) (inherited-slots name)))
 
-(defun info-dict-multi-file-decode (dict)
-  (let ((len (gethash "length" dict))
-        (md5sum (getstring "md5sum" dict))
-        (path   (mapcar #'octets->string (gethash "path" dict))))
-    (make-instance 'info-dict-multi-file
-                   :length len
-                   :md5sum md5sum
-                   :path   path)))
+(defun symbol->keyword (sym)
+  (intern (symbol-name sym) 'keyword))
 
-(defun info-dict-multi-decode (dict &rest rest)
-  (let* ((files (gethash "files" dict))
-         (files (mapcar #'info-dict-multi-file-decode files)))
-    (apply #'make-instance
-           'info-dict-multi
-           :files files
-           rest)))
+(defgeneric bencmap->list (obj))
+(defmethod bencmap->list ((obj t)) obj)
+(defmethod bencmap->list ((obj list))
+  (mapcar #'bencmap->list obj))
 
-(defun info-dict-decode (dict)
-  (let* ((piece-length (gethash "piece length" dict))
-         (pieces (make-pieces (gethash "pieces" dict)))
-         (private (gethash "private" dict))
-         (name    (getstring "name" dict))
-         (args (list :piece-length piece-length
-                     :pieces       pieces
-                     :private      private
-                     :name         name)))
-    (multiple-value-bind (len exists)
-        (gethash "length" dict)
-      (if exists
-          (apply #'info-dict-single-decode dict :length len args)
-          (apply #'info-dict-multi-decode dict args)))))
+(defun bencmap-slot->list (obj slot)
+  (let ((name (first slot)))
+    `(,(symbol->keyword name) (bencmap->list (slot-value ,obj ,name)))))
 
-(defun metainfo-decode (input)
-  (multiple-value-bind (val map buf)
-      (bencode-decode input t)
-    (let* ((info
-            (gethash "info" val))
-           (info-hash
-            (make-info-hash info map buf))
-           (info (info-dict-decode info))
-           (announce
-            (getstring "announce" val))
-           (announce-list
-            (parse-announce-list (gethash "announce-list" val)))
-           (creation-date
-            (gethash "creation date" val))
-           (comment
-            (getstring "comment" val))
-           (created-by
-            (getstring "created-by" val)))
-      (make-instance 'metainfo
-                     :info info
-                     :info-hash info-hash
-                     :announce announce
-                     :announce-list announce-list
-                     :creation-date creation-date
-                     :comment comment
-                     :created-by created-by))))
+(defmacro with-gensyms ((&rest names) &body body)
+  `(let ,(loop for n in names collect `(,n (gensym)))
+     ,@body))
+
+(defun bencmap-key-spec->slot (spec)
+  (let ((name (first spec)))
+    (list name :accessor name :initarg (symbol->keyword name))))
+
+(defun slot-decoder (ctx slot)
+  (destructuring-bind (name type &key (required nil) (key nil)) slot
+    (let ((key (or key (string-downcase (symbol-name name)))))
+      (with-gensyms (val exists)
+        `(multiple-value-bind (,val ,exists) (decode-ctx-get ,ctx ,key)
+           ,@(if required `((assert ,exists)) `((declare (ignore ,exists))))
+           (setf ,name (decode-bencmap-value ,type ,val ,ctx)))))))
+
+(defmacro defbencmap-decoder (name slots)
+  (with-gensyms (obj ctx)
+    `(defmethod bencmap-decode ((type (eql ,name)) ,ctx)
+       (let ((,obj (make-instance ,name)))
+         (with-slots ,(mapcar #'first slots) ,obj
+           ,@(mapcar #'(lambda (x) (slot-decoder ctx x)) slots))
+         ,obj))))
+
+(defmacro defbencmap (name superclasses slots)
+  (with-gensyms (obj)
+    `(progn
+       (eval-when (:compile-toplevel :load-toplevel :execute)
+         (setf (get ',name 'slots) ',slots)
+         (setf (get ',name 'superclasses) ',superclasses))
+       (defclass ,name ,superclasses
+         ,(mapcar #'bencmap-key-spec->slot slots))
+;;        (defmethod bencmap->list ((,obj ,name))
+;;          (list ,(symbol->keyword name)
+;;                ,@(mapcar
+;;                   #'(lambda (x) (bencmap-slot->list obj x)) (all-slots name))))
+       (defbencmap-decoder ',name ,(all-slots name)))))
+
+;; (cons (symbol->keyword ',name)
+;;              (mapcar #'(lambda (x) (bencmap-slot->list obj (first x)))
+;;                      ,(all-slots name)))
+(defbencmap metainfo ()
+  ((info          'info-dict  :required t)
+   (announce      'string     :required t)
+   (creation-date 'epoch-date :key "creation date")
+   (created-by    'string     :key "created by")
+   (info-hash     'info-hash)
+   (announce-list 'announce-list)
+   (comment       'string)))
+
+(defbencmap info-dict-single ()
+  ((piece-length 'integer    :required t :key "piece length")
+   (byte-length  'integer    :required t :key "length")
+   (pieces       'piece-list :required t)
+   (name         'string     :required t)
+   (private      'integer)
+   (md5sum       'string)))
+
+(defbencmap info-dict-multi ()
+  ((piece-length 'integer        :required t :key "piece length")
+   (pieces       'piece-list     :required t)
+   (files        'info-file-list :required t)
+   (name         'string         :required t)
+   (private      'integer)))
+
+(defbencmap info-dict-multi-file ()
+  ((byte-length 'integer     :required t)
+   (path        'string-list :required t)
+   (md5sum      'string)))
+
+(defgeneric is-multi-file (info))
+(defmethod  is-multi-file ((info info-dict-multi))  t)
+(defmethod  is-multi-file ((info info-dict-single)) nil)
 
 (defun metainfo-decode-file (pathname)
   "Decode the file named ``pathname''."
