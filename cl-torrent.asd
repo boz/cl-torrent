@@ -11,13 +11,10 @@
                (:file "bencode-utils"
                       :depends-on ("packages"))
                (:file "bencode"
-                      :depends-on ("bencode-utils" "packages"))
+                      :depends-on ("packages" "bencode-utils"))
                (:file "metainfo"
-                      :depends-on ("bencode-utils" "bencode" "packages"))
-               (:file "bencode-test"
-                      :depends-on
-                      ("bencode-utils" "bencode" "packages" "metainfo")))
-  :depends-on (:lisp-unit :flexi-streams :cl-fad :fiveam :ironclad))
+                      :depends-on ("packages" "bencode-utils" "bencode")))
+  :depends-on (:flexi-streams :ironclad))
 
 (defsystem cl-torrent.test
   :name "cl-torrent.test"

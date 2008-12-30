@@ -1,6 +1,7 @@
-(in-package :cl-torrent)
 
-(declaim (optimize (speed 0) (safety 3) (debug 3)))
+;; (declaim (optimize (speed 0) (safety 3) (debug 3)))
+
+(in-package :cl-torrent)
 
 (defclass bencmap-decode-ctx ()
   ((benc-hash   :reader benc-hash   :initarg :benc-hash)
@@ -32,7 +33,7 @@
     (if (not exists)
         (values nil nil)
         (values
-         (subseq (byte-buffer ctx) (first range) (second range)) t))))
+         (subseq (byte-buffer ctx) (first range) (cdr range)) t))))
 
 (defgeneric decode-bencmap (type ctx))
 
@@ -44,9 +45,9 @@
     (octets->string value)))
 
 (defmethod decode-bencmap-value ((type (eql 'integer)) value ctx)
-  (declare (ignore ctx))
+  (declare (ignore type ctx))
   (when value
-    (assert (integerp type))
+    (assert (integerp value))
     value))
 
 (defmethod decode-bencmap-value ((type (eql 'info-hash)) value ctx)
@@ -98,6 +99,12 @@
                              (new-decode-ctx ctx x))))
       (mapcar #'do-decode value))))
 
+(defmethod decode-bencmap-value ((type (eql 'string-list)) value ctx)
+  (declare (ignore type ctx))
+  (when value
+    (assert (listp value))
+    (mapcar #'octets->string value)))
+
 (defun direct-slots (name)
   (copy-list (get name 'slots)))
 
@@ -110,21 +117,17 @@
 (defun all-slots (name)
   (nconc (direct-slots name) (inherited-slots name)))
 
-(defun symbol->keyword (sym)
-  (intern (symbol-name sym) 'keyword))
-
 (defgeneric bencmap->list (obj))
 (defmethod bencmap->list ((obj t)) obj)
 (defmethod bencmap->list ((obj list))
   (mapcar #'bencmap->list obj))
 
-(defun bencmap-slot->list (obj slot)
-  (let ((name (first slot)))
-    `(,(symbol->keyword name) (bencmap->list (slot-value ,obj ,name)))))
-
 (defmacro with-gensyms ((&rest names) &body body)
   `(let ,(loop for n in names collect `(,n (gensym)))
      ,@body))
+
+(defun symbol->keyword (sym)
+  (intern (symbol-name sym) 'keyword))
 
 (defun bencmap-key-spec->slot (spec)
   (let ((name (first spec)))
@@ -138,31 +141,37 @@
            ,@(if required `((assert ,exists)) `((declare (ignore ,exists))))
            (setf ,name (decode-bencmap-value ,type ,val ,ctx)))))))
 
-(defmacro defbencmap-decoder (name slots)
+(defmacro define-class-bencmap-decoder (name slots)
   (with-gensyms (obj ctx)
-    `(defmethod bencmap-decode ((type (eql ,name)) ,ctx)
-       (let ((,obj (make-instance ,name)))
+    `(defmethod decode-bencmap ((type (eql ',name)) ,ctx)
+       (let ((,obj (make-instance ',name)))
          (with-slots ,(mapcar #'first slots) ,obj
            ,@(mapcar #'(lambda (x) (slot-decoder ctx x)) slots))
          ,obj))))
 
-(defmacro defbencmap (name superclasses slots)
+(defmacro define-class-bencmap->list (name)
   (with-gensyms (obj)
-    `(progn
-       (eval-when (:compile-toplevel :load-toplevel :execute)
-         (setf (get ',name 'slots) ',slots)
-         (setf (get ',name 'superclasses) ',superclasses))
-       (defclass ,name ,superclasses
-         ,(mapcar #'bencmap-key-spec->slot slots))
-;;        (defmethod bencmap->list ((,obj ,name))
-;;          (list ,(symbol->keyword name)
-;;                ,@(mapcar
-;;                   #'(lambda (x) (bencmap-slot->list obj x)) (all-slots name))))
-       (defbencmap-decoder ',name ,(all-slots name)))))
+    (let ((slots (mapcar #'first (all-slots name))))
+      `(defmethod bencmap->list ((,obj ,name))
+         (list ,(symbol->keyword name)
+               ,@(loop
+                    for x in slots
+                    collect (symbol->keyword x)
+                    collect `(bencmap->list (slot-value ,obj ',x))))))))
 
-;; (cons (symbol->keyword ',name)
-;;              (mapcar #'(lambda (x) (bencmap-slot->list obj (first x)))
-;;                      ,(all-slots name)))
+(defmacro defbencmap (name superclasses slots)
+  `(progn
+     (eval-when (:compile-toplevel :load-toplevel :execute)
+       (setf (get ',name 'slots) ',slots)
+       (setf (get ',name 'superclasses) ',superclasses))
+     (defclass ,name ,superclasses
+       ,(mapcar #'(lambda (x)
+                    (let ((name (first x)))
+                      (list name :accessor name :initarg (symbol->keyword
+                                                          name)))) slots))
+     (define-class-bencmap->list ,name)
+     (define-class-bencmap-decoder ,name ,(all-slots name))))
+
 (defbencmap metainfo ()
   ((info          'info-dict  :required t)
    (announce      'string     :required t)
@@ -188,13 +197,22 @@
    (private      'integer)))
 
 (defbencmap info-dict-multi-file ()
-  ((byte-length 'integer     :required t)
+  ((byte-length 'integer     :required t :key "length")
    (path        'string-list :required t)
    (md5sum      'string)))
 
 (defgeneric is-multi-file (info))
 (defmethod  is-multi-file ((info info-dict-multi))  t)
 (defmethod  is-multi-file ((info info-dict-single)) nil)
+
+(defun metainfo-decode (obj)
+  (multiple-value-bind (benc-hash range-map byte-buffer)
+      (bencode-decode obj t)
+    (decode-bencmap 'metainfo
+                    (make-instance 'bencmap-decode-ctx
+                                   :benc-hash   benc-hash
+                                   :range-map   range-map
+                                   :byte-buffer byte-buffer))))
 
 (defun metainfo-decode-file (pathname)
   "Decode the file named ``pathname''."

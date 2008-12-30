@@ -26,12 +26,12 @@
            :pieces
            :private
            :name
-           :length-of
+           :byte-length
            :md5sum
            :files
            :path))
 
 (defpackage :cl-torrent.test
-  (:use :cl :cl-torrent :5am)
+  (:use :cl :cl-torrent :fiveam)
   (:export :run-cl-torrent-tests
            :get-test-torrents))
