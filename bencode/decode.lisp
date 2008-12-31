@@ -1,4 +1,4 @@
-(in-package :cl-torrent)
+(in-package :cl-torrent.bencode)
 
 (defclass bencode-input-stream (flexi-input-stream) ()
   (:documentation

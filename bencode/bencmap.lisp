@@ -1,5 +1,5 @@
 (declaim (optimize (speed 0) (safety 3) (debug 3)))
-(in-package :cl-torrent)
+(in-package :cl-torrent.bencode)
 
 (defgeneric decode-bencmap (type ctx))
 (defgeneric decode-bencmap-value (type value ctx))

@@ -1,5 +1,5 @@
 (declaim (optimize (speed 0) (safety 3) (debug 3)))
-(in-package :cl-torrent)
+(in-package :cl-torrent.types)
 
 (define-bencmap-class metainfo ()
   ((info          'info-dict  :required t)

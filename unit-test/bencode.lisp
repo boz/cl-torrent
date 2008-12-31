@@ -1,16 +1,5 @@
 (in-package :cl-torrent.test)
 
-(defparameter *test-directory* nil)
-
-(defun make-testfile-name (file-name)
-  (concatenate 'string (namestring *test-directory*) "/" file-name))
-
-(defun get-test-torrents ()
-  (let ((spec (make-pathname :directory (make-testfile-name "torrents")
-                             :name :wild
-                             :type "torrent")))
-    (directory spec)))
-
 (defmacro decode-equal (expect input
                         &optional (decode-func 'bencode-decode)
                                   (oxform      'identity)
@@ -68,6 +57,3 @@
 (5am:test metainfo-test-torrents
   (dolist (i (get-test-torrents))
     (5am:is-true (metainfo-decode-file i))))
-
-(defun run-cl-torrent-tests ()
-  (5am:run!))

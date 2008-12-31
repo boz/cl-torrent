@@ -1,4 +1,4 @@
-(in-package :cl-torrent)
+(in-package :cl-torrent.bencode)
 
 (defparameter *bencode-external-format*
   (make-external-format :ASCII))

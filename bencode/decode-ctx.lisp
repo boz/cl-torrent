@@ -1,5 +1,5 @@
 (declaim (optimize (speed 0) (safety 3) (debug 3)))
-(in-package :cl-torrent)
+(in-package :cl-torrent.bencode)
 
 (defclass bencmap-decode-ctx ()
   ((benc-hash   :reader benc-hash   :initarg :benc-hash)

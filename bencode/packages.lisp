@@ -1,37 +1,20 @@
 (in-package :cl-user)
 
-(defpackage :cl-torrent
-  (:use :cl :flexi-streams)
-  (:import-from :ironclad :digest-sequence
-                          :byte-array-to-hex-string)
-  (:export :bencode-decode
-           :bencode-decode-file
-           :string->octets
-           :octets->string
-           :metainfo-decode
-           :metainfo-decode-file
-           :bencmap->list
+(defpackage :cl-torrent.bencode
+  (:use :cl :cl-torrent.utils :flexi-streams)
+  (:export
 
-           ;; metainfo
-           :info
-           :info-hash
-           :announce
-           :announce-list
-           :creation-date
-           :comment
-           :created-by
+   ;; utils
+   :string->octets
+   :octets->string
 
-           ;; info-hash & files
-           :piece-length
-           :pieces
-           :private
-           :name
-           :byte-length
-           :md5sum
-           :files
-           :path))
+   ;; bencode
+   :bencode-decode
+   :bencode-decode-file
 
-(defpackage :cl-torrent.test
-  (:use :cl :cl-torrent :fiveam)
-  (:export :run-cl-torrent-tests
-           :get-test-torrents))
+   ;; bencmap
+   :bencmap-decode
+   :bencmap-decode-file
+   :decode-bencmap
+   :decode-bencmap-value
+   :bencmap->list))
