@@ -6,24 +6,29 @@
 (in-package :cl-torrent-test.asd)
 
 (defsystem cl-torrent-test
-    :name "cl-torrent-test"
-    :components
-    ((:module unit-test
-              :components
-              ((:file "packages")
-               (:file "tests"
-                      :depends-on ("packages"))
-               (:file "bencode"
-                      :depends-on ("packages" "tests")))))
-    :depends-on (:cl-torrent :fiveam))
+  :name "cl-torrent-test"
+  :components
+  ((:module unit-test
+            :components
+            ((:file "packages")
+             (:file "tests"
+                    :depends-on ("packages"))
+             (:file "bencode"
+                    :depends-on ("packages" "tests")))))
 
-(defmethod asdf:perform :before
-    ((op asdf:load-op) (system (eql (find-system :cl-torrent-test))))
-  (setf (symbol-value (intern "*TEST-DIRECTORY*" "CL-TORRENT-TEST"))
-        (asdf:system-relative-pathname system "test-data")))
+  :depends-on (:cl-torrent :lift)
 
-(defmethod asdf:perform
-    ((op asdf:test-op) (system (eql (find-system :cl-torrent-test))))
-  (asdf:oos 'asdf:load-op "cl-torrent-test")
-  (funcall (intern "RUN-TESTS" "CL-TORRENT-TEST")))
+  :perform
+  (load-op :before (op c)
+           (let ((sym (intern "*TEST-DIRECTORY*" "CL-TORRENT-TEST")))
+             (setf (symbol-value sym)
+                   (system-relative-pathname c "test-data")))))
 
+;;   :perform
+;;   (test-op :before (op c)
+;;            (break "WTF")
+;;            (funcall (intern "RUN-TESTS!" "CL-TORRENT-TEST")))
+
+(defmethod asdf:perform :after
+    ((op test-op) (c (eql (find-system :cl-torrent-test))))
+  (funcall (intern "RUN-TESTS!" "CL-TORRENT-TEST")))

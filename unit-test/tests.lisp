@@ -11,5 +11,5 @@
                              :type "torrent")))
     (directory spec)))
 
-(defun run-tests ()
-  (5am:run!))
+(defun run-tests! ()
+  (describe (run-tests :suite 'bencode-test-suite)))

@@ -34,4 +34,6 @@
                       :depends-on ("packages")))
               :depends-on (utils bencode)))
 
-    :depends-on (:flexi-streams :ironclad))
+    :depends-on (:flexi-streams :ironclad)
+
+    :in-order-to ((test-op (test-op cl-torrent-test))))
