@@ -1,4 +1,4 @@
-(in-package :cl-torrent.test)
+(in-package :cl-torrent-test)
 
 (defparameter *test-directory* nil)
 

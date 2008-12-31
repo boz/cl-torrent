@@ -8,10 +8,18 @@
    :string->octets
    :octets->string
 
-   ;; bencode
+   ;; decode
    :bencode-decode
    :bencode-decode-file
 
+   ;; decode-ctx
+   :bencmap-decode-ctx
+   :new-decode-ctx
+   :decode-ctx-contains
+   :decode-ctx-get-range
+   :decode-ctx-get-bytes
+   :decode-ctx-get
+   
    ;; bencmap
    :define-bencmap-class
    :bencmap-decode

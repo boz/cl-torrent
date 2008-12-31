@@ -4,24 +4,24 @@
 (defgeneric decode-bencmap (type ctx))
 (defgeneric decode-bencmap-value (type value ctx))
 
-(defmethod decode-bencmap-value ((type (eql 'string)) value ctx)
+(defmethod decode-bencmap-value ((type (eql :string)) value ctx)
   (declare (ignore type ctx))
   (when value
     (octets->string value)))
 
-(defmethod decode-bencmap-value ((type (eql 'integer)) value ctx)
+(defmethod decode-bencmap-value ((type (eql :integer)) value ctx)
   (declare (ignore type ctx))
   (when value
     (assert (integerp value))
     value))
 
-(defmethod decode-bencmap-value ((type (eql 'epoch-date)) value ctx)
+(defmethod decode-bencmap-value ((type (eql :epoch-date)) value ctx)
   (declare (ignore type ctx))
   (when value
     (assert (integerp value))
     value))
 
-(defmethod decode-bencmap-value ((type (eql 'string-list)) value ctx)
+(defmethod decode-bencmap-value ((type (eql :string-list)) value ctx)
   (declare (ignore type ctx))
   (when value
     (assert (listp value))

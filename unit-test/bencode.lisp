@@ -1,4 +1,4 @@
-(in-package :cl-torrent.test)
+(in-package :cl-torrent-test)
 
 (defmacro decode-equal (expect input
                         &optional (decode-func 'bencode-decode)

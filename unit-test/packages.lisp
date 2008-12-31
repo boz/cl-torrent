@@ -1,6 +1,6 @@
 (in-package :cl-user)
 
-(defpackage :cl-torrent.test
+(defpackage :cl-torrent-test
   (:use :cl :fiveam
         :cl-torrent.utils
         :cl-torrent.bencode
