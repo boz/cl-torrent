@@ -66,8 +66,21 @@
   `(defclass ,name ,superclasses
      ,(mapcar #'bencmap-key-spec->slot slots)))
 
-(defmacro defbencmap (name superclasses slots)
+(defmacro define-bencmap-class (name superclasses slots)
   `(progn
-     (generate-bencmap-class   ,name ,superclasses ,slots)
-     (generate-bencmap->list   ,name ,slots)
-     (generate-bencmap-decoder ,name ,slots)))
+     (generate-bencmap-class    ,name ,superclasses ,slots)
+     (generate-bencmap->list    ,name ,slots)
+     (generate-bencmap-decoder  ,name ,slots)))
+
+(defun bencmap-decode (obj type)
+  (multiple-value-bind (benc-hash range-map byte-buffer)
+      (bencode-decode obj t)
+    (decode-bencmap type
+                    (make-instance 'bencmap-decode-ctx
+                                   :benc-hash   benc-hash
+                                   :range-map   range-map
+                                   :byte-buffer byte-buffer))))
+
+(defun bencmap-decode-file (pathname type)
+  (with-open-file (stream pathname :element-type '(unsigned-byte 8))
+    (bencmap-decode stream type)))
