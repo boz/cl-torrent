@@ -13,6 +13,7 @@
    :bencode-decode-file
 
    ;; bencmap
+   :define-bencmap-class
    :bencmap-decode
    :bencmap-decode-file
    :decode-bencmap
