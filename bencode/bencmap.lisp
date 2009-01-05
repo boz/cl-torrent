@@ -41,7 +41,7 @@
     (let ((key (or key (string-downcase (symbol-name name)))))
       (with-gensyms (val exists)
         `(multiple-value-bind (,val ,exists) (decode-ctx-get ,ctx ,key)
-           ,@(if required `((assert ,exists)) `((declare (ignore ,exists))))
+           ,(if required `(assert ,exists) `(declare (ignore ,exists)))
            (setf ,name (decode-bencmap-value ,type ,val ,ctx)))))))
 
 (defmacro generate-bencmap-decoder (name slots)
@@ -75,11 +75,12 @@
 (defun bencmap-decode (obj type)
   (multiple-value-bind (benc-hash range-map byte-buffer)
       (bencode-decode obj t)
-    (decode-bencmap type
-                    (make-instance 'bencmap-decode-ctx
-                                   :benc-hash   benc-hash
-                                   :range-map   range-map
-                                   :byte-buffer byte-buffer))))
+    (let* ((ctx (make-instance 'bencmap-decode-ctx
+                               :benc-hash   benc-hash
+                               :range-map   range-map
+                               :byte-buffer byte-buffer))
+           (obj (decode-bencmap type ctx)))
+      (values obj byte-buffer))))
 
 (defun bencmap-decode-file (pathname type)
   (with-open-file (stream pathname :element-type '(unsigned-byte 8))

@@ -30,6 +30,11 @@
    (path        :string-list :required t)
    (md5sum      :string)))
 
+(defmethod byte-length ((object info-dict-multi))
+  (let ((total 0))
+    (dolist (f (files obj) total)
+      (incf total (byte-length f)))))
+
 (defgeneric is-multi-file (info))
 (defmethod  is-multi-file ((info info-dict-multi))  t)
 (defmethod  is-multi-file ((info info-dict-single)) nil)
@@ -72,8 +77,7 @@
   (multiple-value-bind (bytes exists)
       (decode-ctx-get-bytes ctx "info")
     (assert exists)
-    (ironclad:byte-array-to-hex-string
-     (ironclad:digest-sequence :sha1 bytes))))
+    (ironclad:digest-sequence :sha1 bytes)))
 
 (defun metainfo-decode (obj)
   (bencmap-decode obj 'metainfo))
