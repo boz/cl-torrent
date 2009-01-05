@@ -6,28 +6,27 @@
 (in-package :cl-torrent-test.asd)
 
 (defsystem cl-torrent-test
-  :name "cl-torrent-test"
-  :components
-  ((:module unit-test
-            :components
-            ((:file "packages")
-             (:file "tests"
-                    :depends-on ("packages"))
-             (:file "bencode"
-                    :depends-on ("packages" "tests")))))
+    :name "cl-torrent-test"
+    :components
+    ((:module unit-test
+              :components
+              ((:file "packages")
+               (:file "tests"
+                      :depends-on ("packages"))
+               (:file "bencode"
+                      :depends-on ("packages" "tests"))
+               (:file "utils"
+                      :depends-on ("packages" "tests")))))
 
-  :depends-on (:cl-torrent :lift)
+    :depends-on (:cl-torrent :lift)
 
-  :perform
-  (load-op :before (op c)
-           (let ((sym (intern "*TEST-DIRECTORY*" "CL-TORRENT-TEST")))
-             (setf (symbol-value sym)
-                   (system-relative-pathname c "test-data")))))
-
-;;   :perform
-;;   (test-op :before (op c)
-;;            (break "WTF")
-;;            (funcall (intern "RUN-TESTS!" "CL-TORRENT-TEST")))
+    :in-order-to ((test-op (load-op "cl-torrent")))
+  
+    :perform
+    (load-op :before (op c)
+             (let ((sym (intern "*TEST-DIRECTORY*" "CL-TORRENT-TEST")))
+               (setf (symbol-value sym)
+                     (system-relative-pathname c "test-data")))))
 
 (defmethod asdf:perform :after
     ((op test-op) (c (eql (find-system :cl-torrent-test))))

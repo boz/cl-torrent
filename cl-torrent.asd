@@ -9,11 +9,12 @@
     :name "cl-torrent"
     :components
     ((:module utils
-              :serial t
               :components
               ((:file "packages")
-               (:file "utils")))
-
+               (:file "utils"
+                      :depends-on ("packages"))
+               (:file "stream"
+                      :depends-on ("packages"))))
      (:module bencode
               :components
               ((:file "packages")
@@ -33,7 +34,7 @@
                (:file "metainfo"
                       :depends-on ("packages")))
               :depends-on (utils bencode)))
-
-    :depends-on (:flexi-streams :ironclad)
+  
+    :depends-on (:flexi-streams :ironclad :drakma :cl-fad :sb-posix)
 
     :in-order-to ((test-op (test-op cl-torrent-test))))
