@@ -17,7 +17,9 @@
                     :depends-on ("packages"))
              (:module bencode
                       :components
-                      ((:file "decode-stream"))
+                      ((:file "decode-stream")
+                       (:file "bencode-object")
+                       (:file "decode"))
                       :depends-on ("packages" "tests"))
              (:file "utils"
                     :depends-on ("packages" "tests")))))

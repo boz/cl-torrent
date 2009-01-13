@@ -12,9 +12,9 @@
 
 (defun read-decimal (stream)
   (do ((x 0)
-       (c (peek-char nil stream) (peek-char nil stream)))
+       (c (peek-character stream t nil) (peek-character stream t nil)))
       ((not (digit-char-p c)) x)
-    (setf x (+ (char->number (read-char stream))
+    (setf x (+ (char->number (read-character stream))
                (* 10 x)))))
 
 (defun octets->string (buf)
@@ -23,21 +23,8 @@
 (defun string->octets (buf)
   (string-to-octets buf :external-format *bencode-external-string-format*))
 
-(defun ensure-flexi-stream (stream &optional (external-format :ascii))
-  (etypecase stream
-    (flexi-stream stream)
-    (stream (make-flexi-stream stream :external-format external-format))
-    (string (ensure-flexi-stream
-             (string-to-octets stream :external-format external-format)
-             external-format))
-    (list (ensure-flexi-stream
-           (make-in-memory-input-stream stream)
-           external-format))
-    (vector (ensure-flexi-stream
-             (make-in-memory-input-stream stream)
-             external-format))))
-
-(defmacro with-return-val ((val-name val-expr) &body body)
-  `(let ((,val-name ,val-expr))
-     (progn ,@body)
-     ,val-name))
+(defun ensure-octets (obj)
+  (etypecase obj
+    (string (string->octets obj))
+    ((array (unsigned-byte 8)) obj)
+    (simple-vector obj)))
