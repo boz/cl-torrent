@@ -4,9 +4,24 @@
   (:use :cl :cl-torrent.utils :flexi-streams)
   (:export
 
+   ;; decode stream
+   :offset
+   :buffer
+   :peek-character
+   :read-character
+   :read-buffer
+   :make-decode-stream
+   
    ;; utils
    :string->octets
    :octets->string
+
+   ;; decode-stream
+   :position
+   :make-decode-stream
+   :peek-character
+   :read-character
+   :read-buffer
 
    ;; decode
    :bencode-decode

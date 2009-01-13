@@ -18,6 +18,8 @@
      (:module bencode
               :components
               ((:file "packages")
+               (:file "decode-stream"
+                      :depends-on ("packages"))
                (:file "utils"
                       :depends-on ("packages"))
                (:file "decode"
