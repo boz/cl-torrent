@@ -54,7 +54,7 @@ next character does not signal an object type, return NIL."
     (let* ((key  (decode-bencode-object next-obj stream))
            (next-object (make-next-object stream)))
       (assert next-object) ;; a value is required
-      (bencode-dictionary-set obj key next-object))))
+      (bencode-dictionary-set obj key (decode-bencode-object next-object stream)))))
 
 (defmethod decode-bencode-object ((obj bencode-list) (stream decode-stream))
   "Decode a bencoded list."

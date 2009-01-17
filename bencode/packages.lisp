@@ -20,6 +20,10 @@
    :bencode-object=
    :bencode-dictionary-get
    :bencode-dictionary-set
+   :make-bencode-string
+   :make-bencode-integer
+   :make-bencode-dictionary
+   :make-bencode-list
 
    ;; decode stream
    :decode-stream-offset

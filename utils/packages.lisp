@@ -11,4 +11,5 @@
    :symbol->keyword
    
    ;; stream
+   :*stream-buffer-size*
    :copy-stream-to-buffer))

@@ -1,3 +1,4 @@
+(declaim (optimize (speed 0) (safety 3) (debug 3)))
 
 (in-package :cl-torrent-test)
 
@@ -17,3 +18,26 @@
   test-integer-decode
   (with-decoded-vals (x val) "i10e"
     (ensure-same val 10)))
+
+(addtest (test-decode)
+  test-list-decode
+  (with-decoded-vals (x val) "li10e3:AAAe"
+    (ensure (listp val))
+    (destructuring-bind (num str) val
+      (ensure (typep num 'bencode-integer))
+      (ensure-same 10 (bencode-object-value num))
+      (ensure (typep str 'bencode-string))
+      (ensure-same #(65 65 65) (bencode-object-value str) :test #'equalp))))
+
+(addtest (test-decode)
+  test-dict-decode
+  (with-decoded-vals (x val) "d3:AAAi10ee"
+    (ensure (typep x 'bencode-dictionary))
+    (let ((value (bencode-dictionary-get x "AAA")))
+      (ensure (typep value 'bencode-integer))
+      (ensure-same 10 (bencode-object-value value)))))
+
+(addtest (test-decode)
+  test-metainfo-smoketest
+  (dolist (i (get-test-torrents))
+    (ensure (bencode-decode-file i))))

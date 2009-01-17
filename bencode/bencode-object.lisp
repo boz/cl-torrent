@@ -1,6 +1,6 @@
 (in-package :cl-torrent.bencode)
 
-(defgeneric bencode-object= (obj &rest rest))
+(defgeneric bencode-object= (x y))
 
 (defclass bencode-object ()
   ((bytes :accessor bencode-object-bytes :initarg :bytes :initform nil)
@@ -11,13 +11,11 @@
 (defclass bencode-dictionary (bencode-object) ())
 (defclass bencode-list (bencode-object) ())
 
-(defmethod bencode-object= ((obj bencode-object) &rest rest)
-  (apply #'equalp (bencode-object-value obj) rest))
+(defmethod bencode-object= ((x bencode-object) (y bencode-object))
+  (equalp (bencode-object-value x) (bencode-object-value y)))
 
-(defmethod bencode-object= ((obj bencode-string) &rest rest)
-  (flet ((xform (x)
-           (if (typep x 'string) (string->octets x) x)))
-    (apply #'equalp (bencode-object-value obj) (mapcar #'xform rest))))
+(defmethod bencode-object= ((obj bencode-string) y)
+  (call-next-method obj (ensure-bencode-string y)))
 
 (defun ensure-bencode-string (obj)
   (etypecase obj
@@ -42,3 +40,12 @@
 (defun bencode-dictionary-get (dict key)
   (with-dict-lookup (key alist cell) dict
     (when cell (cdr cell))))
+
+(defun make-bencode-string (str)
+  (ensure-bencode-string str))
+(defun make-bencode-integer (&optional value)
+  (make-instance 'bencode-integer :value value))
+(defun make-bencode-dictionary ()
+  (make-instance 'bencode-dictionary))
+(defun make-bencode-list (&optional value)
+  (make-instance 'bencode-list :value value))
