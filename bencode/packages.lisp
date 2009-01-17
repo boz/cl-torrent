@@ -14,6 +14,7 @@
    :bencode-object-bytes
    :bencode-object-value
    :bencode-string
+   :bencode-string-value
    :bencode-integer
    :bencode-dictionary
    :bencode-list
@@ -24,6 +25,7 @@
    :make-bencode-integer
    :make-bencode-dictionary
    :make-bencode-list
+   
 
    ;; decode stream
    :decode-stream-offset
@@ -38,11 +40,10 @@
    :bencode-decode-file
 
    ;; bencmap
-;;    :define-bencmap-class
-;;    :bencmap-decode
-;;    :bencmap-decode-file
-;;    :decode-bencmap
-;;    :decode-bencmap-value
-;;    :bencmap->list
-
-   ))
+   :define-bencmap-class
+   :bencmap-decode
+   :bencmap-decode-file
+   :decode-bencmap
+   :decode-bencmap-value
+   :bencmap->list
+   :with-bencode-value))

@@ -27,7 +27,11 @@
       (ensure (typep num 'bencode-integer))
       (ensure-same 10 (bencode-object-value num))
       (ensure (typep str 'bencode-string))
-      (ensure-same #(65 65 65) (bencode-object-value str) :test #'equalp))))
+      (ensure-same #(65 65 65) (bencode-object-value str) :test #'equalp)))
+  (with-decoded-vals (x val) "li10ee"
+    (ensure (listp val))
+    (ensure-same 1 (length val))
+    (ensure-same 10 (bencode-object-value (car val)))))
 
 (addtest (test-decode)
   test-dict-decode

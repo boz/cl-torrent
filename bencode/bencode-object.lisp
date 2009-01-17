@@ -41,6 +41,9 @@
   (with-dict-lookup (key alist cell) dict
     (when cell (cdr cell))))
 
+(defun bencode-string-value (obj)
+  (octets->string (bencode-object-value obj)))
+
 (defun make-bencode-string (str)
   (ensure-bencode-string str))
 (defun make-bencode-integer (&optional value)

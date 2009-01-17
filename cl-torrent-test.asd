@@ -21,6 +21,10 @@
                        (:file "bencode-object")
                        (:file "decode"))
                       :depends-on ("packages" "tests"))
+             (:module types
+                      :components
+                      ((:file "metainfo"))
+                      :depends-on ("packages" "tests"))
              (:file "utils"
                     :depends-on ("packages" "tests")))))
 
