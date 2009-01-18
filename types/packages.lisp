@@ -10,20 +10,22 @@
    :metainfo-decode-file
 
    ;; metainfo slots
-   :info
-   :info-hash
-   :announce
-   :announce-list
-   :creation-date
-   :comment
-   :created-by
+   :metainfo-info
+   :metainfo-info-hash
+   :metainfo-announce
+   :metainfo-announce-list
+   :metainfo-creation-date
+   :metainfo-comment
+   :metainfo-created-by
 
    ;; info-hash & files slots
-   :piece-length
-   :pieces
-   :private
-   :name
-   :byte-length
-   :md5sum
-   :files
-   :path))
+   :info-piece-length
+   :info-byte-length
+   :info-pieces
+   :info-name
+   :info-private
+   :info-md5sum
+   :info-files
+   :info-file-byte-length
+   :info-file-md5sum
+   :info-file-path))

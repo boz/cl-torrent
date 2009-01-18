@@ -8,6 +8,7 @@
                            :parameters   parameters
                            :force-binary t
                            :want-stream  t)
+    (declare (ignore headers uri stream must-close reason-phrase))
     (with-open-stream (body body)
       (assert (= 200 status))
       (copy-stream-to-buffer body))))

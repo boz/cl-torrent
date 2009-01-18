@@ -9,8 +9,9 @@
   (sb-posix:mkdir path mode))
 
 (defun ensure-directory-exists (path &key (force t))
+  (declare (ignore force))
   (unless (directory-exists-p path)
-    ;; todo: restart.
+    ;; todo: condition.
     (make-directory path)))
 
 (defun path-add-basename (dirname basename)

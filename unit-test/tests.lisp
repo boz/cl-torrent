@@ -12,6 +12,8 @@
     (directory spec)))
 
 (deftestsuite cl-torrent-test-suite () ())
+(deftestsuite cl-torrent-bencode-test-suite
+    (cl-torrent-test-suite) ())
 
 (defun run-tests! ()
   (describe (run-tests :suite 'cl-torrent-test-suite)))
