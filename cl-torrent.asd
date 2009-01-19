@@ -46,7 +46,13 @@
             ((:file "packages")
              (:file "utils"
                     :depends-on ("packages")))
-            :depends-on (utils)))
+            :depends-on (utils))
+
+   (:module file-store
+            :components
+            ((:file "packages")
+             (:file "ranges"
+                    :depends-on ("packages")))))
 
   :depends-on (:flexi-streams :ironclad :drakma :cl-fad :sb-posix)
 

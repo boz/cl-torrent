@@ -23,6 +23,10 @@
                       :components
                       ((:file "metainfo"))
                       :depends-on ("packages" "tests"))
+             (:module file-store
+                      :components
+                      ((:file "ranges"))
+                      :depends-on ("packages" "tests"))
              (:file "utils"
                     :depends-on ("packages" "tests")))))
 

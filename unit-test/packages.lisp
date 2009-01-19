@@ -4,7 +4,8 @@
   (:use :cl :lift
         :cl-torrent.utils
         :cl-torrent.bencode
-        :cl-torrent.types)
+        :cl-torrent.types
+        :cl-torrent.file-store)
 
   (:export :*test-directory*
            :make-testfile-name
