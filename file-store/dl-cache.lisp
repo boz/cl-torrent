@@ -19,9 +19,9 @@
                  :name      *dl-cache-torrent-name*
                  :type      "torrent"))
 
-(defun initialize-dl-cache (cache-dir torrent-path)
+(defun initialize-dl-cache (cache-dir)
   (make-directory cache-dir)
   (let ((save-path   (dl-cache-torrent-path cache-dir))
-        (pieces-path (dl-cache-pieces-path cache-dir)))
-    (copy-file torrent-path save-path)
+        (pieces-path (dl-cache-pieces-path  cache-dir)))
+    (metainfo-encode-file metainfo save-path)
     (make-directory pieces-path)))

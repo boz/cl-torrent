@@ -8,7 +8,8 @@
    (metainfo-created-by    :string        :key "created by")
    (metainfo-info-hash     :info-hash     :key "info-hash")
    (metainfo-announce-list :announce-list :key "announce-list")
-   (metainfo-comment       :string        :key "comment")))
+   (metainfo-comment       :string        :key "comment")
+   (metainfo-bytes         :byte-buffer   :key "non existent")))
 
 (define-bencmap-class info-dict-single ()
   ((info-piece-length :integer    :required t :key "piece length")
@@ -52,7 +53,9 @@
   (declare (ignore type dict))
   (with-bencode-value (value value)
     (assert (listp value))
-    (loop for x in value collect (mapcar #'bencode-string-value (bencode-object-value x)))))
+    (loop
+       for x in value
+       collect (mapcar #'bencode-string-value (bencode-object-value x)))))
 
 (defmethod decode-bencmap-value ((type (eql :piece-list)) value dict)
   (declare (ignore type dict))
@@ -78,8 +81,25 @@
     (ironclad:byte-array-to-hex-string
      (ironclad:digest-sequence :sha1 (bencode-object-bytes info)))))
 
+(defmethod decode-bencmap-value ((type (eql :byte-buffer)) value dict)
+  (declare (ignore type))
+  (assert (not value))
+  (let ((bytes (bencode-object-bytes dict)))
+    (assert bytes)
+    bytes))
+
 (defun metainfo-decode (obj)
   (bencmap-decode obj 'metainfo))
 
 (defun metainfo-decode-file (pathname)
   (bencmap-decode-file pathname 'metainfo))
+
+(defun metainfo-encode (metainfo &optional stream)
+  (let ((stream (or stream *standard-output*))
+        (seq (metainfo-bytes metainfo)))
+    (write-sequence seq stream)))
+
+(defun meatinfo-encode-file (metainfo path)
+  (with-open-file
+      (stream path :direction :output :element-type '(unsigned-byte 8))
+    (metainfo-encode metainfo stream)))

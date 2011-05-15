@@ -17,26 +17,12 @@
 (defmethod initialize-loader ((loader torrent-loader))
   (ensure-directory-exists (cache-dir loader)))
 
-(defmethod load-torrent ((loader torrent-loader) path)
-  (multiple-value-bind (metainfo buffer)
-      (metainfo-decode-file path)
-    (let ((dl-cache (dl-cache-dir loader (info-hash metainfo))))
-      (when (directory-exists-p dl-cache)
-        (error "torrent exists"))
-      (dl (make-instance 'torrent-download
-                         :cache-dir    dl-cache
-                         :download-dir (download-dir loader)))
-      (initialize-torrent metainfo path)
-      dl)))
+(defmethod load-torrent ((loader torrent-loader) (metainfo metainfo))
+  (let ((dl-cache (dl-cache-dir loader (info-hash metainfo))))
+    (when (directory-exists-p dl-cache)
+      (error "torrent exists"))
+    (initialize-dl-cache cache-dir)
+    (make-torrent-download :cache-dir    dl-cache
+                           :download-dir (download-dir loader)
+                           :metainfo     metainfo)))
 
-(defclass download-config ()
-  ((cache-dir
-    :accessor cache-dir :initarg :cache-dir)
-   (download-directory
-    :accessor download-directory :initarg :download-directory)
-   (files
-    :reader files :initarg :files)
-   (metainfo
-    :reader metainfo :initarg :metainfo)
-   (metainfo-bytes
-    :reader metainfo-bytes :initarg :metainfo-bytes)))

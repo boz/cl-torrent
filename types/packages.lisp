@@ -8,6 +8,8 @@
    ;; metainfo
    :metainfo-decode
    :metainfo-decode-file
+   :metainfo-encode
+   :metainfo-encode-file
 
    ;; metainfo slots
    :metainfo-info

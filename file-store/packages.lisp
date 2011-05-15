@@ -1,6 +1,6 @@
 (in-package :cl-user)
 (defpackage :cl-torrent.file-store
-  (:use :cl)
+  (:use :cl :iterate)
   (:export :make-range
            :copy-range
            :range-start
